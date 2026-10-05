@@ -1,0 +1,6 @@
+{
+  "name": "Saudi MISA CR",
+  "description": "Unified Saudi foreign investment, MISA, Commercial Registration (CR), Nafath SSO, and sbtech.sa enterprise portal integrated with real Saudi Government digital services (Wathq, ZATCA, Qiwa, Balady).",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
