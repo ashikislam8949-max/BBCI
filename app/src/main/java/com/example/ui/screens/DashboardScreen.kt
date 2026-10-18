@@ -26,7 +26,6 @@ import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Business
 import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.material.icons.filled.Fingerprint
 import androidx.compose.material.icons.filled.Gavel
 import androidx.compose.material.icons.filled.Handshake
 import androidx.compose.material.icons.filled.Language
@@ -74,12 +73,10 @@ import com.example.ui.theme.StatusWarning
 fun DashboardScreen(
     viewModel: MainViewModel,
     onOpenNewCompanyDialog: () -> Unit,
-    onOpenNafathDialog: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     val dossiers by viewModel.dossiers.collectAsStateWithLifecycle()
     val complianceItems by viewModel.complianceItems.collectAsStateWithLifecycle()
-    val authenticatedNafathUser by viewModel.authenticatedNafathUser.collectAsStateWithLifecycle()
 
     val compliantCount = complianceItems.count { it.status == "COMPLIANT" }
     val totalCompliance = maxOf(1, complianceItems.size)
@@ -95,93 +92,25 @@ fun DashboardScreen(
         // Hero Header
         item {
             SaudiBrandHeader(
-                title = "Saudi MISA CR & Gov Portal",
-                subtitle = "Unified foreign investment licensing, CR incorporation & regulatory monitoring"
+                title = "SBTECH Investor Desk",
+                subtitle = "Saudi business-setup notes. Not a government login or filing service."
             )
         }
 
-        // Nafath SSO Identity Quick Banner
         item {
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clickable {
-                        if (onOpenNafathDialog != null) {
-                            onOpenNafathDialog()
-                        } else {
-                            viewModel.selectTab(AppNavTab.GOV_INTEGRATIONS)
-                        }
-                    }
-                    .testTag("dashboard_nafath_banner"),
+                    .testTag("dashboard_affiliation_banner"),
                 shape = RoundedCornerShape(12.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = if (authenticatedNafathUser != null) Color(0xFF0F3B24) else Color(0xFF1E293B)
-                )
+                colors = CardDefaults.cardColors(containerColor = Color(0xFF1E293B))
             ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(14.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.weight(1f)
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .size(40.dp)
-                                .clip(CircleShape)
-                                .background(if (authenticatedNafathUser != null) SaudiGreen else SaudiGold),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Fingerprint,
-                                contentDescription = null,
-                                tint = if (authenticatedNafathUser != null) Color.White else Color(0xFF1E241F),
-                                modifier = Modifier.size(24.dp)
-                            )
-                        }
-                        Spacer(modifier = Modifier.width(12.dp))
-                        Column {
-                            Text(
-                                text = if (authenticatedNafathUser != null)
-                                    authenticatedNafathUser!!.arabicFullName
-                                else
-                                    "Nafath SSO Gateway (نفاذ الوطني الموحد)",
-                                fontSize = 13.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = Color.White
-                            )
-                            Text(
-                                text = if (authenticatedNafathUser != null)
-                                    "ID: ${authenticatedNafathUser!!.nationalId} • Authorized Signatory (موثق)"
-                                else
-                                    "Authenticate with Saudi National ID / Iqama & Wathq",
-                                fontSize = 10.sp,
-                                color = if (authenticatedNafathUser != null) Color(0xFF86EFAC) else Color(0xFFCBD5E1)
-                            )
-                        }
-                    }
-
-                    Box(
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(6.dp))
-                            .background(
-                                if (authenticatedNafathUser != null) Color(0xFF22C55E).copy(alpha = 0.2f)
-                                else SaudiGold.copy(alpha = 0.2f)
-                            )
-                            .padding(horizontal = 8.dp, vertical = 4.dp)
-                    ) {
-                        Text(
-                            text = if (authenticatedNafathUser != null) "Active نفاذ" else "Connect ربط",
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = if (authenticatedNafathUser != null) Color(0xFF86EFAC) else SaudiGold
-                        )
-                    }
-                }
+                Text(
+                    text = "Not affiliated with MISA or any government entity. This app does not submit or issue licences.",
+                    modifier = Modifier.padding(14.dp),
+                    fontSize = 12.sp,
+                    color = Color.White
+                )
             }
         }
 
@@ -260,7 +189,7 @@ fun DashboardScreen(
                                 }
                             }
                             Text(
-                                text = "شركة إس بي تك للتقنية • ربط حكومي شامل (نفاذ، واثق، زكاة، قوى، بلدي)",
+                                text = "شركة إس بي تك للتقنية • sbtech.sa",
                                 fontSize = 10.sp,
                                 color = Color(0xFF94A3B8)
                             )
@@ -456,13 +385,13 @@ fun DashboardScreen(
         // All Saudi Government Services Integrated Ecosystem
         item {
             Text(
-                text = "Integrated Government Services Ecosystem",
+                text = "Preparation references",
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold
             )
             Spacer(modifier = Modifier.height(4.dp))
             Text(
-                text = "Direct unified interconnection with the Kingdom's regulatory authorities",
+                text = "Agencies you may deal with yourself. This app is not connected to them.",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -588,8 +517,7 @@ fun GovServicesGrid(
     onServiceClick: (String) -> Unit
 ) {
     val services = listOf(
-        GovServiceItem("NAFATH", "Nafath SSO (نفاذ)", "National Single Sign-On Gateway", Icons.Default.Fingerprint, SaudiGreen),
-        GovServiceItem("WATHQ", "Wathq (واثق MC)", "Live CR & AoA Direct Verification", Icons.Default.Business, Color(0xFF0284C7)),
+        GovServiceItem("WATHQ", "Commercial registry notes", "Sample CR checklist, not a live registry", Icons.Default.Business, Color(0xFF0284C7)),
         GovServiceItem("ZATCA", "ZATCA Tax & Fatoora", "VAT 15% & Cryptographic Stamps", Icons.Default.Receipt, Color(0xFF0D9488)),
         GovServiceItem("Qiwa", "Qiwa & Mudad", "Work Visas & Saudization Quota", Icons.Default.People, Color(0xFFE11D48)),
         GovServiceItem("GOSI", "GOSI Insurance", "WPS Protection & Wage Compliance", Icons.Default.Security, Color(0xFF7C3AED)),

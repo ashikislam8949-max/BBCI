@@ -1,6 +1,6 @@
 {
-  "name": "Saudi MISA CR",
-  "description": "Unified Saudi foreign investment, MISA, Commercial Registration (CR), Nafath SSO, and sbtech.sa enterprise portal integrated with real Saudi Government digital services (Wathq, ZATCA, Qiwa, Balady).",
+  "name": "SBTECH Investor Desk: Saudi Business Setup",
+  "description": "Independent SBTECH app for preparing Saudi business-setup notes. Not affiliated with the Ministry of Investment (MISA) or any government entity. It does not provide a government login and does not submit or issue licences.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

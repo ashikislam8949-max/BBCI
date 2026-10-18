@@ -59,31 +59,7 @@ class SaudiGovPlatformTest {
     }
 
     @Test
-    fun `verify nafath sso initiation and two digit code generation`() = kotlinx.coroutines.runBlocking {
-        val service = com.example.data.nafath.SaudiGovIntegrationService()
-        service.initiateNafathAuth("1089334215")
-
-        val session = service.nafathSession.value
-        assertEquals(com.example.data.nafath.NafathAuthStatus.WAITING_USER_ACTION, session.status)
-        assertTrue("Verification code should be 2 digits", session.verificationCode in 10..99)
-        assertTrue("Transaction ID should start with NFT-", session.transactionId.startsWith("NFT-"))
-    }
-
-    @Test
-    fun `verify nafath verification approval and identity data`() = kotlinx.coroutines.runBlocking {
-        val service = com.example.data.nafath.SaudiGovIntegrationService()
-        service.initiateNafathAuth("1089334215")
-        service.completeNafathVerification(approved = true)
-
-        val identity = service.authenticatedUser.value
-        org.junit.Assert.assertNotNull(identity)
-        assertEquals("1089334215", identity?.nationalId)
-        assertTrue(identity!!.isAuthorizedSignatory)
-        assertTrue(identity.authorizedCompanies.isNotEmpty())
-    }
-
-    @Test
-    fun `verify wathq commercial registration live inquiry`() = kotlinx.coroutines.runBlocking {
+    fun `verify wathq commercial registration sample inquiry`() = kotlinx.coroutines.runBlocking {
         val service = com.example.data.nafath.SaudiGovIntegrationService()
         val result = service.queryWathqCr("1010892341")
 

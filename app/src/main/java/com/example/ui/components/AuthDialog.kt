@@ -19,9 +19,7 @@ import androidx.compose.material.icons.filled.Business
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Email
-import androidx.compose.material.icons.filled.Fingerprint
 import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.Verified
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -46,13 +44,11 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.data.firebase.UserProfile
 import com.example.ui.MainViewModel
 import com.example.ui.theme.SaudiGold
 import com.example.ui.theme.SaudiGreen
 import com.example.ui.theme.SaudiGreenDark
-import com.example.ui.theme.StatusSuccess
 import kotlinx.coroutines.launch
 
 @Composable
@@ -62,8 +58,6 @@ fun AuthProfileDialog(
     onDismiss: () -> Unit
 ) {
     val coroutineScope = rememberCoroutineScope()
-    val authenticatedNafathUser by viewModel.authenticatedNafathUser.collectAsStateWithLifecycle()
-    var showNafathSubDialog by remember { mutableStateOf(false) }
     var nameInput by remember { mutableStateOf(currentUser?.displayName ?: "Alexandre Dupont") }
     var emailInput by remember { mutableStateOf(currentUser?.email ?: "a.dupont@vanceholdings.com") }
     var companyInput by remember { mutableStateOf(currentUser?.companyName ?: "Vance Global Capital") }
@@ -146,90 +140,6 @@ fun AuthProfileDialog(
                     }
                 }
 
-                Spacer(modifier = Modifier.height(12.dp))
-
-                // Saudi Regulated Identity (Nafath SSO) Card
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(10.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = if (authenticatedNafathUser != null) Color(0xFF0F3621) else Color(0xFF1E2836)
-                    )
-                ) {
-                    Column(modifier = Modifier.padding(12.dp)) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Icon(
-                                    imageVector = Icons.Default.Fingerprint,
-                                    contentDescription = null,
-                                    tint = if (authenticatedNafathUser != null) Color(0xFF86EFAC) else SaudiGold,
-                                    modifier = Modifier.size(18.dp)
-                                )
-                                Spacer(modifier = Modifier.width(6.dp))
-                                Text(
-                                    text = "Nafath SSO (نفاذ الوطني)",
-                                    fontSize = 11.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = Color.White
-                                )
-                            }
-                            Text(
-                                text = if (authenticatedNafathUser != null) "VERIFIED ✓" else "NOT VERIFIED",
-                                fontSize = 9.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = if (authenticatedNafathUser != null) StatusSuccess else SaudiGold
-                            )
-                        }
-
-                        Spacer(modifier = Modifier.height(6.dp))
-
-                        if (authenticatedNafathUser != null) {
-                            Text(
-                                text = authenticatedNafathUser!!.arabicFullName,
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 13.sp,
-                                color = Color.White
-                            )
-                            Text(
-                                text = "National ID: ${authenticatedNafathUser!!.nationalId} • Authorized Signatory",
-                                fontSize = 11.sp,
-                                color = Color(0xFF86EFAC)
-                            )
-                            Spacer(modifier = Modifier.height(8.dp))
-                            Button(
-                                onClick = { showNafathSubDialog = true },
-                                colors = ButtonDefaults.buttonColors(containerColor = SaudiGreen),
-                                shape = RoundedCornerShape(6.dp),
-                                modifier = Modifier.fillMaxWidth()
-                            ) {
-                                Text("View Official Digital Identity", fontSize = 11.sp)
-                            }
-                        } else {
-                            Text(
-                                text = "Government-regulated filings (MISA CR, Wathq, ZATCA, Qiwa) require a verified Saudi National ID or Iqama.",
-                                fontSize = 10.sp,
-                                color = Color(0xFFCBD5E1),
-                                lineHeight = 14.sp
-                            )
-                            Spacer(modifier = Modifier.height(8.dp))
-                            Button(
-                                onClick = { showNafathSubDialog = true },
-                                colors = ButtonDefaults.buttonColors(containerColor = SaudiGreen),
-                                shape = RoundedCornerShape(6.dp),
-                                modifier = Modifier.fillMaxWidth()
-                            ) {
-                                Icon(Icons.Default.Fingerprint, contentDescription = null, modifier = Modifier.size(14.dp))
-                                Spacer(modifier = Modifier.width(6.dp))
-                                Text("Sign In with Nafath SSO (نفاذ)", fontSize = 11.sp)
-                            }
-                        }
-                    }
-                }
-
                 Spacer(modifier = Modifier.height(16.dp))
                 Text(
                     text = "Update Investor Profile",
@@ -301,10 +211,4 @@ fun AuthProfileDialog(
         }
     )
 
-    if (showNafathSubDialog) {
-        NafathSsoAuthDialog(
-            viewModel = viewModel,
-            onDismiss = { showNafathSubDialog = false }
-        )
-    }
 }

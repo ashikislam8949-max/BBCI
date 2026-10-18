@@ -1,5 +1,6 @@
 package com.example
 
+import android.content.Context
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -23,7 +24,9 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Business
 import androidx.compose.material.icons.filled.Dashboard
+import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.Handshake
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.VerifiedUser
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
@@ -46,7 +49,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -55,8 +60,9 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.ui.AppNavTab
 import com.example.ui.screens.MisaInvestmentApplicationScreen
 import com.example.ui.MainViewModel
+import com.example.R
+import com.example.ui.components.AffiliationNoticeDialog
 import com.example.ui.components.AuthProfileDialog
-import com.example.ui.components.NafathSsoAuthDialog
 import com.example.ui.components.NewCompanyDialog
 import com.example.ui.screens.AiRegulatorySuiteScreen
 import com.example.ui.screens.ComplianceRadarScreen
@@ -69,7 +75,6 @@ import com.example.ui.theme.MyApplicationTheme
 import com.example.ui.theme.SaudiGold
 import com.example.ui.theme.SaudiGreen
 import com.example.ui.theme.SaudiGreenDark
-import androidx.compose.material.icons.filled.Fingerprint
 import androidx.compose.material.icons.filled.Language
 
 class MainActivity : ComponentActivity() {
@@ -87,12 +92,18 @@ class MainActivity : ComponentActivity() {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MainApp(viewModel: MainViewModel = viewModel()) {
+    val context = LocalContext.current
+    val prefs = remember {
+        context.getSharedPreferences("sbtech_investor", Context.MODE_PRIVATE)
+    }
     val currentTab by viewModel.currentTab.collectAsStateWithLifecycle()
     val currentUser by viewModel.currentUser.collectAsStateWithLifecycle()
-    val authenticatedNafathUser by viewModel.authenticatedNafathUser.collectAsStateWithLifecycle()
 
     var showAuthDialog by remember { mutableStateOf(false) }
-    var showNafathDialog by remember { mutableStateOf(false) }
+    var showAbout by remember { mutableStateOf(false) }
+    var showFirstLaunchNotice by remember {
+        mutableStateOf(!prefs.getBoolean("disclaimer_acknowledged", false))
+    }
     var showNewCompanyDialog by remember { mutableStateOf(false) }
 
     Scaffold(
@@ -109,7 +120,7 @@ fun MainApp(viewModel: MainViewModel = viewModel()) {
                             contentAlignment = Alignment.Center
                         ) {
                             Text(
-                                text = "KSA",
+                                text = "SB",
                                 fontSize = 11.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = SaudiGold
@@ -118,15 +129,16 @@ fun MainApp(viewModel: MainViewModel = viewModel()) {
                         Spacer(modifier = Modifier.width(10.dp))
                         Column {
                             Text(
-                                text = "Saudi MISA CR & Gov",
+                                text = "SBTECH Investor Desk",
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Bold,
                                 color = Color.White
                             )
                             Text(
-                                text = "Nafath & Unified Gov Integration",
+                                text = stringResource(R.string.affiliation_disclaimer),
                                 fontSize = 10.sp,
-                                color = Color(0xFFD4EBD9)
+                                color = Color(0xFFD4EBD9),
+                                maxLines = 2
                             )
                         }
                     }
@@ -170,33 +182,15 @@ fun MainApp(viewModel: MainViewModel = viewModel()) {
 
                     Spacer(modifier = Modifier.width(4.dp))
 
-                    // Quick Nafath Identity Badge
-                    Box(
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(12.dp))
-                            .background(
-                                if (authenticatedNafathUser != null) Color(0xFF14532D)
-                                else SaudiGold.copy(alpha = 0.25f)
-                            )
-                            .clickable { showNafathDialog = true }
-                            .padding(horizontal = 8.dp, vertical = 4.dp),
-                        contentAlignment = Alignment.Center
+                    IconButton(
+                        onClick = { showAbout = true },
+                        modifier = Modifier.testTag("about_button")
                     ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(
-                                imageVector = Icons.Default.Fingerprint,
-                                contentDescription = "Nafath",
-                                tint = if (authenticatedNafathUser != null) Color(0xFF86EFAC) else SaudiGold,
-                                modifier = Modifier.size(16.dp)
-                            )
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text(
-                                text = if (authenticatedNafathUser != null) "نفاذ موثق" else "نفاذ",
-                                fontSize = 10.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = if (authenticatedNafathUser != null) Color(0xFF86EFAC) else SaudiGold
-                            )
-                        }
+                        Icon(
+                            imageVector = Icons.Default.Info,
+                            contentDescription = stringResource(R.string.about_title),
+                            tint = Color.White
+                        )
                     }
 
                     Spacer(modifier = Modifier.width(2.dp))
@@ -261,8 +255,8 @@ fun MainApp(viewModel: MainViewModel = viewModel()) {
                 NavigationBarItem(
                     selected = currentTab == AppNavTab.GOV_INTEGRATIONS,
                     onClick = { viewModel.selectTab(AppNavTab.GOV_INTEGRATIONS) },
-                    icon = { Icon(Icons.Default.Fingerprint, contentDescription = "Gov Gate") },
-                    label = { Text("Gov Gate", fontSize = 9.sp) },
+                    icon = { Icon(Icons.Default.Description, contentDescription = "Notes") },
+                    label = { Text("Notes", fontSize = 9.sp) },
                     colors = NavigationBarItemDefaults.colors(
                         selectedIconColor = SaudiGreen,
                         selectedTextColor = SaudiGreen,
@@ -332,8 +326,7 @@ fun MainApp(viewModel: MainViewModel = viewModel()) {
             when (currentTab) {
                 AppNavTab.DASHBOARD -> DashboardScreen(
                     viewModel = viewModel,
-                    onOpenNewCompanyDialog = { showNewCompanyDialog = true },
-                    onOpenNafathDialog = { showNafathDialog = true }
+                    onOpenNewCompanyDialog = { showNewCompanyDialog = true }
                 )
                 AppNavTab.SBTECH_PORTAL -> SbTechPortalScreen(
                     viewModel = viewModel
@@ -377,10 +370,16 @@ fun MainApp(viewModel: MainViewModel = viewModel()) {
         )
     }
 
-    if (showNafathDialog) {
-        NafathSsoAuthDialog(
-            viewModel = viewModel,
-            onDismiss = { showNafathDialog = false }
+    if (showFirstLaunchNotice || showAbout) {
+        AffiliationNoticeDialog(
+            acknowledgeRequired = showFirstLaunchNotice,
+            onDismiss = {
+                if (showFirstLaunchNotice) {
+                    prefs.edit().putBoolean("disclaimer_acknowledged", true).apply()
+                    showFirstLaunchNotice = false
+                }
+                showAbout = false
+            }
         )
     }
 }

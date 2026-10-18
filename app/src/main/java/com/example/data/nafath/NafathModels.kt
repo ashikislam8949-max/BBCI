@@ -1,39 +1,5 @@
 package com.example.data.nafath
 
-enum class NafathAuthStatus {
-    IDLE,
-    INITIATING,
-    WAITING_USER_ACTION, // Displaying 2-digit code for user to tap in Nafath app
-    BIOMETRIC_VERIFICATION,
-    SUCCESS,
-    EXPIRED,
-    REJECTED
-}
-
-data class NafathUserIdentity(
-    val nationalId: String,
-    val arabicFullName: String,
-    val englishFullName: String,
-    val dateOfBirthHijri: String,
-    val dateOfBirthGregorian: String,
-    val nationality: String,
-    val absherMobile: String,
-    val nationalAddress: String,
-    val isAuthorizedSignatory: Boolean = true,
-    val authorizedCompanies: List<String> = emptyList(),
-    val authToken: String = ""
-)
-
-data class NafathSession(
-    val transactionId: String,
-    val verificationCode: Int, // Two-digit code e.g. 42
-    val nationalId: String,
-    val status: NafathAuthStatus,
-    val expiresInSeconds: Int = 180,
-    val identity: NafathUserIdentity? = null,
-    val errorMessage: String? = null
-)
-
 // Wathq (Ministry of Commerce) CR Query Result
 data class WathqCrResult(
     val crNumber: String,

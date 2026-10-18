@@ -19,8 +19,6 @@ import com.example.data.remote.GeneratedImageResult
 import com.example.data.remote.GroundedResponse
 import com.example.data.repository.SaudiGovRepository
 import com.example.data.nafath.BaladyLicenseResult
-import com.example.data.nafath.NafathSession
-import com.example.data.nafath.NafathUserIdentity
 import com.example.data.nafath.QiwaLaborResult
 import com.example.data.nafath.SaudiGovIntegrationService
 import com.example.data.nafath.WathqCrResult
@@ -39,7 +37,7 @@ enum class AppNavTab {
     SBTECH_PORTAL, // sbtech.sa Live Portal with Real Saudi Gov Integrations
     MISA_CR_WIZARD,
     MISA_APPLICATION, // Multi-Step MISA Investment License Application Form
-    GOV_INTEGRATIONS, // Nafath Single Sign-On & All Saudi Gov API Interconnections
+    GOV_INTEGRATIONS, // Sample preparation notes. Not a government login.
     COMPLIANCE_RADAR,
     WE_CONSULTING,
     AI_ADVISORY
@@ -54,10 +52,6 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     val currentUser: StateFlow<UserProfile?> = authManager.currentUser
     val isAuthLoading: StateFlow<Boolean> = authManager.isLoading
-
-    // Nafath Single Sign-On State
-    val nafathSession: StateFlow<NafathSession> = govService.nafathSession
-    val authenticatedNafathUser: StateFlow<NafathUserIdentity?> = govService.authenticatedUser
 
     // Saudi Government API Query States
     private val _wathqResult = MutableStateFlow<WathqCrResult?>(null)
@@ -94,52 +88,23 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         _sbTechCredentials.value = credentials
     }
 
-    fun updateSbTechAuthCode(authCode: String) {
-        _sbTechCredentials.value = _sbTechCredentials.value.copy(
-            nafathAuthCode = authCode,
-            lastHandshakeTime = System.currentTimeMillis()
-        )
-    }
-
-    fun testSbTechLiveHandshake(customAuthCode: String? = null) {
+    fun testSbTechLiveHandshake() {
         viewModelScope.launch {
             _isSbTechHandshaking.value = true
             _sbTechHandshakeMessage.value = null
-            kotlinx.coroutines.delay(800) // Realistic secure ping to sbtech.sa and KSA gateway
+            kotlinx.coroutines.delay(800)
 
-            val code = customAuthCode?.takeIf { it.isNotBlank() } ?: _sbTechCredentials.value.nafathAuthCode
             _sbTechCredentials.value = _sbTechCredentials.value.copy(
-                nafathAuthCode = code,
                 lastHandshakeTime = System.currentTimeMillis(),
-                isLiveProduction = true
+                isLiveProduction = false
             )
             _isSbTechHandshaking.value = false
-            _sbTechHandshakeMessage.value = "تمت المصادقة بنجاح! كود التوثيق ($code) نشط مع نفاذ، واثق، زكاة، وقوى لموقع sbtech.sa (HTTP 200 OK)"
+            _sbTechHandshakeMessage.value = "Saved on this device. This app is not connected to Nafath, MISA, or any government system."
         }
     }
 
     fun getSbTechEmbedCode(): String {
         return SbTechEmbedGenerator.generateHtmlEmbedSnippet(_sbTechCredentials.value)
-    }
-
-    fun initiateNafathAuth(nationalId: String) {
-        viewModelScope.launch {
-            govService.initiateNafathAuth(nationalId)
-        }
-    }
-
-    fun completeNafathVerification(approved: Boolean = true) {
-        viewModelScope.launch {
-            govService.completeNafathVerification(approved)
-        }
-    }
-
-    fun logoutNafath() {
-        govService.logoutNafath()
-    }
-
-    fun resetNafathSession() {
-        govService.resetNafathSession()
     }
 
     fun queryWathq(crNumber: String) {

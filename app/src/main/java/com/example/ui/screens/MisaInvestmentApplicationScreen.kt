@@ -22,10 +22,9 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.Business
 import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.material.icons.filled.Fingerprint
 import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.MonetizationOn
-import androidx.compose.material.icons.filled.VerifiedUser
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -60,7 +59,6 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.ui.MainViewModel
 import com.example.ui.components.SaudiBrandHeader
 import com.example.ui.theme.SaudiGold
@@ -76,16 +74,13 @@ fun MisaInvestmentApplicationScreen(
     onNavigateBack: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val authenticatedNafathUser by viewModel.authenticatedNafathUser.collectAsStateWithLifecycle()
-
     // Wizard Step State (1 to 5)
     var currentStep by remember { mutableIntStateOf(1) }
 
-    // Step 1: Signatory & Legal Representative
-    val representativeName = authenticatedNafathUser?.arabicFullName ?: "Dr. Tariq Al-Mansoor"
-    val nationalId = authenticatedNafathUser?.nationalId ?: "1098234567"
-    var contactEmail by remember { mutableStateOf("tariq.mansoor@hyperion-robotics.sa") }
-    var contactPhone by remember { mutableStateOf("+966 50 123 4567") }
+    // Step 1: Contact for the private checklist. No national ID is collected.
+    var representativeName by remember { mutableStateOf("") }
+    var contactEmail by remember { mutableStateOf("") }
+    var contactPhone by remember { mutableStateOf("") }
 
     // Step 2: Company Registration Details
     var englishName by remember { mutableStateOf("Hyperion Robotics Advanced KSA") }
@@ -123,7 +118,6 @@ fun MisaInvestmentApplicationScreen(
 
     // Step 5: Final Submission Confirmation Dialog State
     var showSuccessDialog by remember { mutableStateOf(false) }
-    var generatedCrNumber by remember { mutableStateOf("") }
 
     LazyColumn(
         modifier = modifier
@@ -147,7 +141,7 @@ fun MisaInvestmentApplicationScreen(
                     Text("Back to Milestones")
                 }
                 Text(
-                    text = "MISA e-License Portal",
+                    text = "Private checklist",
                     fontSize = 12.sp,
                     fontWeight = FontWeight.Bold,
                     color = SaudiGreen
@@ -157,8 +151,8 @@ fun MisaInvestmentApplicationScreen(
 
         item {
             SaudiBrandHeader(
-                title = "MISA Investment License Application",
-                subtitle = "Official Ministry of Investment 5-Step e-Filing & Commercial Registration Wizard"
+                title = "Business setup checklist",
+                subtitle = "Notes you keep on this device. Not an official filing and not a government login."
             )
         }
 
@@ -179,11 +173,11 @@ fun MisaInvestmentApplicationScreen(
                         Text(
                             text = "Step $currentStep of 5: ${
                                 when (currentStep) {
-                                    1 -> "Signatory Verification"
+                                    1 -> "Contact details"
                                     2 -> "Company Details & Capital"
                                     3 -> "Business Activity & Sector"
                                     4 -> "Supporting Documents"
-                                    else -> "Review & Official Submit"
+                                    else -> "Review & save"
                                 }
                             }",
                             style = MaterialTheme.typography.titleSmall,
@@ -228,86 +222,23 @@ fun MisaInvestmentApplicationScreen(
                     when (currentStep) {
                         1 -> {
                             Text(
-                                text = "1. Authorized Signatory & Nafath Verification",
+                                text = "1. Contact details",
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Bold
                             )
                             Text(
-                                text = "Verify your Saudi National Identity or authorized residency via Nafath Single Sign-On to act as the legal applicant for the MISA investment license.",
+                                text = "Add a contact for this private checklist. This app does not verify a national ID and does not sign you in to Nafath or MISA.",
                                 fontSize = 12.sp,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
 
-                            Card(
-                                modifier = Modifier.fillMaxWidth(),
-                                shape = RoundedCornerShape(8.dp),
-                                colors = CardDefaults.cardColors(
-                                    containerColor = if (authenticatedNafathUser != null) Color(0xFFF0FDF4) else Color(0xFFFEFCE8)
-                                ),
-                                border = CardDefaults.outlinedCardBorder().copy(
-                                    brush = androidx.compose.ui.graphics.SolidColor(if (authenticatedNafathUser != null) StatusSuccess else SaudiGold)
-                                )
-                            ) {
-                                Row(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(12.dp),
-                                    horizontalArrangement = Arrangement.SpaceBetween,
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Row(verticalAlignment = Alignment.CenterVertically) {
-                                        Icon(
-                                            imageVector = if (authenticatedNafathUser != null) Icons.Default.VerifiedUser else Icons.Default.Fingerprint,
-                                            contentDescription = null,
-                                            tint = if (authenticatedNafathUser != null) StatusSuccess else SaudiGoldDark,
-                                            modifier = Modifier.size(24.dp)
-                                        )
-                                        Spacer(modifier = Modifier.width(10.dp))
-                                        Column {
-                                            Text(
-                                                text = if (authenticatedNafathUser != null) "Nafath Verified Signatory" else "Nafath SSO Recommended",
-                                                fontWeight = FontWeight.Bold,
-                                                fontSize = 13.sp
-                                            )
-                                            Text(
-                                                text = if (authenticatedNafathUser != null) "${authenticatedNafathUser!!.arabicFullName} • ID: ${authenticatedNafathUser!!.nationalId}" else "Tap to authenticate with National Single Sign-On",
-                                                fontSize = 11.sp,
-                                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                                            )
-                                        }
-                                    }
-                                    Box(
-                                        modifier = Modifier
-                                            .clip(RoundedCornerShape(6.dp))
-                                            .background(if (authenticatedNafathUser != null) StatusSuccess.copy(alpha = 0.2f) else SaudiGold)
-                                            .padding(horizontal = 8.dp, vertical = 4.dp)
-                                    ) {
-                                        Text(
-                                            text = if (authenticatedNafathUser != null) "Verified ✓" else "Active",
-                                            fontSize = 10.sp,
-                                            fontWeight = FontWeight.Bold,
-                                            color = if (authenticatedNafathUser != null) StatusSuccess else Color(0xFF1E241F)
-                                        )
-                                    }
-                                }
-                            }
-
                             OutlinedTextField(
                                 value = representativeName,
-                                onValueChange = {},
-                                label = { Text("Legal Representative / General Manager Full Name") },
-                                leadingIcon = { Icon(Icons.Default.VerifiedUser, contentDescription = null) },
+                                onValueChange = { representativeName = it },
+                                label = { Text("Contact name") },
+                                leadingIcon = { Icon(Icons.Default.Person, contentDescription = null) },
                                 modifier = Modifier.fillMaxWidth(),
-                                readOnly = true
-                            )
-
-                            OutlinedTextField(
-                                value = nationalId,
-                                onValueChange = {},
-                                label = { Text("National ID / Iqama Number") },
-                                leadingIcon = { Icon(Icons.Default.Fingerprint, contentDescription = null) },
-                                modifier = Modifier.fillMaxWidth(),
-                                readOnly = true
+                                singleLine = true
                             )
 
                             OutlinedTextField(
@@ -542,12 +473,12 @@ fun MisaInvestmentApplicationScreen(
 
                         5 -> {
                             Text(
-                                text = "5. Review Application Summary & Submit to MISA",
+                                text = "5. Review and save on this device",
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Bold
                             )
                             Text(
-                                text = "Please review your investment license dossier before transmitting to the Ministry of Investment electronic portal.",
+                                text = "Review your notes before saving them on this device. Nothing is sent to a government portal.",
                                 fontSize = 12.sp,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -567,7 +498,7 @@ fun MisaInvestmentApplicationScreen(
                                     Text("Foreign Equity: ${foreignOwnership.toInt()}%", fontSize = 12.sp)
                                     Text("Activity: $selectedActivity", fontSize = 12.sp, color = SaudiGreenDark)
                                     Text("Head Office: $headOfficeCity", fontSize = 12.sp)
-                                    Text("Signatory: $representativeName (ID: $nationalId)", fontSize = 12.sp)
+                                    Text("Contact: ${representativeName.ifBlank { "Not set" }}", fontSize = 12.sp)
                                 }
                             }
                         }
@@ -610,7 +541,6 @@ fun MisaInvestmentApplicationScreen(
                                         capitalSar = cap,
                                         foreignOwnership = foreignOwnership.toInt()
                                     )
-                                    generatedCrNumber = "1010" + (100000 + (Math.random() * 899999).toInt())
                                     showSuccessDialog = true
                                 },
                                 colors = ButtonDefaults.buttonColors(containerColor = SaudiGold, contentColor = Color(0xFF1E241F)),
@@ -618,7 +548,7 @@ fun MisaInvestmentApplicationScreen(
                             ) {
                                 Icon(Icons.Default.CheckCircle, contentDescription = null, modifier = Modifier.size(18.dp))
                                 Spacer(modifier = Modifier.width(6.dp))
-                                Text("Submit MISA Application & Issue CR", fontWeight = FontWeight.Bold)
+                                Text("Save checklist on this device", fontWeight = FontWeight.Bold)
                             }
                         }
                     }
@@ -649,20 +579,19 @@ fun MisaInvestmentApplicationScreen(
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(Icons.Default.CheckCircle, contentDescription = null, tint = StatusSuccess, modifier = Modifier.size(28.dp))
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text("MISA License Issued Successfully!", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                    Text("Checklist saved on this device", fontWeight = FontWeight.Bold, fontSize = 16.sp)
                 }
             },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text("Your Saudi Ministry of Investment (MISA) license application has been successfully processed and submitted.")
+                    Text("Your notes were saved in this app. No licence was issued and nothing was submitted to MISA or any other government entity.")
                     Card(
                         colors = CardDefaults.cardColors(containerColor = Color(0xFFF3FAF5)),
                         shape = RoundedCornerShape(8.dp)
                     ) {
                         Column(modifier = Modifier.padding(12.dp)) {
                             Text("Company: $englishName", fontWeight = FontWeight.Bold)
-                            Text("Generated CR: $generatedCrNumber", fontWeight = FontWeight.Bold, color = SaudiGreenDark)
-                            Text("Status: Under Review / Wathq Integration Active", fontSize = 12.sp)
+                            Text("Saved locally", fontWeight = FontWeight.Bold, color = SaudiGreenDark)
                         }
                     }
                 }

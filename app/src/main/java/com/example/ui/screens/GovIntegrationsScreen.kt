@@ -76,7 +76,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.example.data.nafath.NafathAuthStatus
 import com.example.ui.MainViewModel
 import com.example.ui.components.SaudiBrandHeader
 import com.example.ui.components.StatusPill
@@ -95,11 +94,10 @@ fun GovIntegrationsScreen(
 ) {
     var selectedPortalTab by remember { mutableIntStateOf(0) }
     val portalTabs = listOf(
-        "Nafath (نفاذ)",
-        "Wathq (واثق MC)",
-        "ZATCA (الزكاة)",
-        "Qiwa (قوى MHRSD)",
-        "Balady & GOSI"
+        "Registry notes",
+        "Tax notes",
+        "Workforce notes",
+        "Premises notes"
     )
 
     LazyColumn(
@@ -111,8 +109,8 @@ fun GovIntegrationsScreen(
     ) {
         item {
             SaudiBrandHeader(
-                title = "Saudi Gov Unified Gateways",
-                subtitle = "Direct interconnection with Nafath SSO, Wathq, ZATCA, Qiwa, GOSI, & Balady"
+                title = "Preparation notes",
+                subtitle = "Sample checklists only. Not a Nafath, MISA, or other government login."
             )
         }
 
@@ -144,337 +142,10 @@ fun GovIntegrationsScreen(
 
         item {
             when (selectedPortalTab) {
-                0 -> NafathSsoSection(viewModel)
-                1 -> WathqCrSection(viewModel)
-                2 -> ZatcaSection(viewModel)
-                3 -> QiwaSection(viewModel)
-                4 -> BaladyGosiSection(viewModel)
-            }
-        }
-    }
-}
-
-/**
- * 1. Nafath National Single Sign-On (نفاذ الوطني الموحد)
- */
-@Composable
-fun NafathSsoSection(viewModel: MainViewModel) {
-    val nafathSession by viewModel.nafathSession.collectAsStateWithLifecycle()
-    val authenticatedUser by viewModel.authenticatedNafathUser.collectAsStateWithLifecycle()
-    var inputId by remember { mutableStateOf("1089334215") }
-
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .testTag("nafath_sso_card"),
-        shape = RoundedCornerShape(14.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-    ) {
-        Column(modifier = Modifier.padding(18.dp)) {
-            // Nafath Header with Emerald/Gold Crest
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Box(
-                        modifier = Modifier
-                            .size(38.dp)
-                            .clip(CircleShape)
-                            .background(SaudiGreen),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Fingerprint,
-                            contentDescription = "Nafath Identity",
-                            tint = Color.White,
-                            modifier = Modifier.size(24.dp)
-                        )
-                    }
-                    Spacer(modifier = Modifier.width(10.dp))
-                    Column {
-                        Text(
-                            text = "Nafath SSO (نفاذ الوطني الموحد)",
-                            fontSize = 15.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                        Text(
-                            text = "National Information Center (NIC) Gateway",
-                            fontSize = 11.sp,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                }
-                Box(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(6.dp))
-                        .background(
-                            if (authenticatedUser != null) StatusSuccess.copy(alpha = 0.15f)
-                            else Color(0xFFF1F5F9)
-                        )
-                        .padding(horizontal = 8.dp, vertical = 4.dp)
-                ) {
-                    Text(
-                        text = if (authenticatedUser != null) "Verified (موثق)" else "Not Authenticated",
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = if (authenticatedUser != null) StatusSuccess else Color.Gray
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(14.dp))
-
-            if (authenticatedUser == null) {
-                // When not authenticated: Login with Saudi ID / Iqama
-                Text(
-                    text = "Sign in using your Saudi National ID (هوية وطنية) or Resident Permit (إقامة). You will receive a two-digit push verification code to approve in the official Nafath App.",
-                    fontSize = 12.sp,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    lineHeight = 17.sp
-                )
-
-                Spacer(modifier = Modifier.height(14.dp))
-
-                OutlinedTextField(
-                    value = inputId,
-                    onValueChange = { if (it.length <= 10) inputId = it },
-                    label = { Text("National ID / Iqama (رقم الهوية أو الإقامة)") },
-                    leadingIcon = { Icon(Icons.Default.AccountCircle, contentDescription = null) },
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true
-                )
-
-                if (nafathSession.status == NafathAuthStatus.WAITING_USER_ACTION) {
-                    Spacer(modifier = Modifier.height(16.dp))
-
-                    // 2-Digit Verification Code Display (Official Nafath UX)
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clip(RoundedCornerShape(12.dp))
-                            .background(
-                                Brush.verticalGradient(
-                                    listOf(Color(0xFF0F2B1D), Color(0xFF1E4631))
-                                )
-                            )
-                            .padding(18.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text(
-                                text = "OPEN NAFATH APP & TAP NUMBER",
-                                fontSize = 11.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = SaudiGold,
-                                letterSpacing = 1.sp
-                            )
-                            Text(
-                                text = "افتح تطبيق نفاذ واختر الرقم أدناه لتأكيد الهوية",
-                                fontSize = 11.sp,
-                                color = Color(0xFFD3E6DB)
-                            )
-                            Spacer(modifier = Modifier.height(10.dp))
-                            Box(
-                                modifier = Modifier
-                                    .size(76.dp)
-                                    .clip(CircleShape)
-                                    .background(SaudiGold)
-                                    .border(3.dp, Color.White, CircleShape),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Text(
-                                    text = "${nafathSession.verificationCode}",
-                                    fontSize = 34.sp,
-                                    fontWeight = FontWeight.ExtraBold,
-                                    color = Color(0xFF132018)
-                                )
-                            }
-                            Spacer(modifier = Modifier.height(10.dp))
-                            Text(
-                                text = "Transaction ID: ${nafathSession.transactionId}",
-                                fontSize = 10.sp,
-                                color = Color(0xFFB8D3C3)
-                            )
-                            Spacer(modifier = Modifier.height(14.dp))
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(8.dp)
-                            ) {
-                                Button(
-                                    onClick = { viewModel.completeNafathVerification(approved = true) },
-                                    colors = ButtonDefaults.buttonColors(containerColor = SaudiGreen),
-                                    modifier = Modifier
-                                        .weight(1f)
-                                        .testTag("nafath_approve_sim_button"),
-                                    shape = RoundedCornerShape(8.dp)
-                                ) {
-                                    Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(16.dp))
-                                    Spacer(modifier = Modifier.width(4.dp))
-                                    Text("Simulate Approve in Nafath", fontSize = 11.sp)
-                                }
-                                OutlinedButton(
-                                    onClick = { viewModel.completeNafathVerification(approved = false) },
-                                    modifier = Modifier
-                                        .weight(0.6f)
-                                        .testTag("nafath_reject_sim_button"),
-                                    shape = RoundedCornerShape(8.dp)
-                                ) {
-                                    Text("Reject", color = Color(0xFFEF4444), fontSize = 11.sp)
-                                }
-                            }
-                        }
-                    }
-                } else if (nafathSession.status == NafathAuthStatus.BIOMETRIC_VERIFICATION) {
-                    Spacer(modifier = Modifier.height(14.dp))
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clip(RoundedCornerShape(8.dp))
-                            .background(SaudiGreen.copy(alpha = 0.1f))
-                            .padding(12.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        CircularProgressIndicator(modifier = Modifier.size(18.dp), color = SaudiGreen, strokeWidth = 2.dp)
-                        Spacer(modifier = Modifier.width(10.dp))
-                        Text("Verifying facial biometrics with NIC (جاري التحقق من البصمة)...", fontSize = 12.sp, color = SaudiGreen)
-                    }
-                } else {
-                    Spacer(modifier = Modifier.height(12.dp))
-                    Button(
-                        onClick = { viewModel.initiateNafathAuth(inputId) },
-                        colors = ButtonDefaults.buttonColors(containerColor = SaudiGreen),
-                        shape = RoundedCornerShape(8.dp),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .testTag("initiate_nafath_button")
-                    ) {
-                        Icon(Icons.Default.Fingerprint, contentDescription = null, modifier = Modifier.size(18.dp))
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text("Send Nafath Verification Request", fontWeight = FontWeight.Bold)
-                    }
-                }
-
-                if (nafathSession.errorMessage != null) {
-                    Spacer(modifier = Modifier.height(10.dp))
-                    Text(
-                        text = nafathSession.errorMessage!!,
-                        color = StatusDanger,
-                        fontSize = 11.sp
-                    )
-                }
-            } else {
-                // Authenticated Citizen/Resident Identity Card
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(
-                            Brush.horizontalGradient(
-                                listOf(Color(0xFF0C3B24), Color(0xFF14532D))
-                            )
-                        )
-                        .padding(16.dp)
-                ) {
-                    Column {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Box(
-                                    modifier = Modifier
-                                        .size(32.dp)
-                                        .clip(CircleShape)
-                                        .background(SaudiGold.copy(alpha = 0.25f)),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Icon(Icons.Default.Verified, contentDescription = null, tint = SaudiGold, modifier = Modifier.size(20.dp))
-                                }
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Text(
-                                    text = "NAFATH VERIFIED IDENTITY",
-                                    fontSize = 11.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = SaudiGold,
-                                    letterSpacing = 1.sp
-                                )
-                            }
-                            Text(
-                                text = "Token Active",
-                                fontSize = 10.sp,
-                                color = Color(0xFFBBF7D0),
-                                fontWeight = FontWeight.SemiBold
-                            )
-                        }
-
-                        Spacer(modifier = Modifier.height(12.dp))
-                        Text(
-                            text = authenticatedUser!!.arabicFullName,
-                            fontSize = 16.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Color.White
-                        )
-                        Text(
-                            text = authenticatedUser!!.englishFullName,
-                            fontSize = 12.sp,
-                            color = Color(0xFFE2E8F0)
-                        )
-
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween
-                        ) {
-                            Column {
-                                Text("National ID", fontSize = 10.sp, color = Color(0xFF94A3B8))
-                                Text(authenticatedUser!!.nationalId, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color.White)
-                            }
-                            Column {
-                                Text("Birthdate (Hijri)", fontSize = 10.sp, color = Color(0xFF94A3B8))
-                                Text(authenticatedUser!!.dateOfBirthHijri, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color.White)
-                            }
-                            Column {
-                                Text("Absher Mobile", fontSize = 10.sp, color = Color(0xFF94A3B8))
-                                Text(authenticatedUser!!.absherMobile, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color.White)
-                            }
-                        }
-
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(Icons.Default.LocationOn, contentDescription = null, tint = SaudiGold, modifier = Modifier.size(14.dp))
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text(
-                                text = authenticatedUser!!.nationalAddress,
-                                fontSize = 10.sp,
-                                color = Color(0xFFCBD5E1)
-                            )
-                        }
-
-                        Spacer(modifier = Modifier.height(12.dp))
-                        Text(
-                            text = "Commercial Mandates & Signatory Authorization (صلاحيات التوقيع):",
-                            fontSize = 10.sp,
-                            color = SaudiGold,
-                            fontWeight = FontWeight.Bold
-                        )
-                        authenticatedUser!!.authorizedCompanies.forEach { comp ->
-                            Text("• $comp", fontSize = 11.sp, color = Color.White)
-                        }
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(12.dp))
-                OutlinedButton(
-                    onClick = { viewModel.logoutNafath() },
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(8.dp)
-                ) {
-                    Text("Disconnect Nafath Session (تسجيل الخروج من نفاذ)", color = StatusDanger, fontSize = 12.sp)
-                }
+                0 -> WathqCrSection(viewModel)
+                1 -> ZatcaSection(viewModel)
+                2 -> QiwaSection(viewModel)
+                else -> BaladyGosiSection(viewModel)
             }
         }
     }
@@ -488,8 +159,6 @@ fun WathqCrSection(viewModel: MainViewModel) {
     var crInput by remember { mutableStateOf("1010892341") }
     val result by viewModel.wathqResult.collectAsStateWithLifecycle()
     val isLoading by viewModel.isWathqLoading.collectAsStateWithLifecycle()
-    val authenticatedUser by viewModel.authenticatedNafathUser.collectAsStateWithLifecycle()
-
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -517,41 +186,19 @@ fun WathqCrSection(viewModel: MainViewModel) {
                     Spacer(modifier = Modifier.width(10.dp))
                     Column {
                         Text("Wathq Gateway (واثق)", fontSize = 14.sp, fontWeight = FontWeight.Bold)
-                        Text("Ministry of Commerce Live Commercial Registry API", fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text("Sample notes, not a live registry", fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
             }
 
             Spacer(modifier = Modifier.height(10.dp))
             Text(
-                text = "Instant real-time validation of Saudi Commercial Registrations (CR), electronic Articles of Association (AoA), Chamber of Commerce membership, and authorized board directors.",
+                text = "Sample commercial-registration notes for your own checklist. This is not a live registry lookup.",
                 fontSize = 11.sp,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
 
-            // Nafath Signatory Status Indicator
-            if (authenticatedUser != null) {
-                Spacer(modifier = Modifier.height(10.dp))
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(8.dp))
-                        .background(SaudiGreen.copy(alpha = 0.1f))
-                        .padding(horizontal = 10.dp, vertical = 6.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Icon(Icons.Default.VerifiedUser, contentDescription = null, tint = SaudiGreen, modifier = Modifier.size(16.dp))
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text(
-                        text = "Signatory Verified: ${authenticatedUser!!.arabicFullName} (National ID: ${authenticatedUser!!.nationalId})",
-                        fontSize = 11.sp,
-                        color = SaudiGreenDark,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(8.dp))
-                Text("Select Authorized Entity:", fontSize = 10.sp, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text("Sample commercial-registration numbers:", fontSize = 10.sp, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 Spacer(modifier = Modifier.height(4.dp))
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(6.dp),
@@ -568,9 +215,8 @@ fun WathqCrSection(viewModel: MainViewModel) {
                         label = { Text("Apex Cloud (1010892341)", fontSize = 10.sp) }
                     )
                 }
-            }
 
-            Spacer(modifier = Modifier.height(12.dp))
+                        Spacer(modifier = Modifier.height(12.dp))
             OutlinedTextField(
                 value = crInput,
                 onValueChange = { crInput = it },
@@ -591,11 +237,11 @@ fun WathqCrSection(viewModel: MainViewModel) {
                 if (isLoading) {
                     CircularProgressIndicator(modifier = Modifier.size(16.dp), color = Color.White, strokeWidth = 2.dp)
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text("Querying Wathq Network...")
+                    Text("Loading sample note...")
                 } else {
                     Icon(Icons.Default.Verified, contentDescription = null, modifier = Modifier.size(16.dp))
                     Spacer(modifier = Modifier.width(6.dp))
-                    Text("Verify CR with Wathq API")
+                    Text("Show sample registry note")
                 }
             }
 
