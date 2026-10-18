@@ -1,12 +1,17 @@
-# Builds a signed release AAB. Does not upload to Google Play.
+# Builds a release AAB. Does not upload to Google Play.
 #
-# google-services.json is not in git. This workflow writes it to
-# app/google-services.json from the GOOGLE_SERVICES_JSON secret.
-# The upload keystore is decoded to $RUNNER_TEMP and is not committed.
-# The keystore alias must be "upload".
+# pull_request runs this check. Signing secrets are optional:
+# when ANDROID_KEYSTORE_BASE64, STORE_PASSWORD, and KEY_PASSWORD are all set,
+# the job signs the AAB (alias "upload"). Otherwise it builds a debug APK and
+# an unsigned release AAB.
+#
+# google-services.json is not in git. When GOOGLE_SERVICES_JSON is set, CI
+# writes it to app/google-services.json for that job only. The project still
+# builds when the file is absent.
 name: Release AAB
 
 on:
+  pull_request:
   workflow_dispatch:
     inputs:
       version_name:
@@ -20,8 +25,12 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: release-aab-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  bundle-release:
+  build:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -33,47 +42,63 @@ jobs:
           distribution: temurin
           java-version: "17"
 
-      - name: Decode signing secrets
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Accept Android SDK licenses
+        run: yes | sdkmanager --licenses >/dev/null || true
+
+      - name: Prepare optional signing and Firebase config
+        id: signing
         env:
           ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          STORE_PASSWORD: ${{ secrets.STORE_PASSWORD }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
           GOOGLE_SERVICES_JSON: ${{ secrets.GOOGLE_SERVICES_JSON }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: |
           set -euo pipefail
-          if [ -z "${ANDROID_KEYSTORE_BASE64}" ]; then
-            echo "Missing secret ANDROID_KEYSTORE_BASE64" >&2
-            exit 1
+          if [ -n "${GOOGLE_SERVICES_JSON}" ]; then
+            umask 077
+            printf '%s\n' "${GOOGLE_SERVICES_JSON}" > app/google-services.json
+            echo "Wrote app/google-services.json from GOOGLE_SERVICES_JSON."
+          else
+            echo "GOOGLE_SERVICES_JSON is not set. Building without app/google-services.json."
           fi
-          if [ -z "${GOOGLE_SERVICES_JSON}" ]; then
-            echo "Missing secret GOOGLE_SERVICES_JSON" >&2
-            exit 1
-          fi
-          umask 077
-          printf '%s' "${ANDROID_KEYSTORE_BASE64}" | tr -d '\n\r' | base64 -d > "${RUNNER_TEMP}/upload.jks"
-          if [ ! -s "${RUNNER_TEMP}/upload.jks" ]; then
-            echo "Decoded keystore is empty" >&2
-            exit 1
-          fi
-          printf '%s\n' "${GOOGLE_SERVICES_JSON}" > app/google-services.json
           if [ -n "${GEMINI_API_KEY}" ]; then
+            umask 077
             printf 'GEMINI_API_KEY=%s\n' "${GEMINI_API_KEY}" > .env
           else
-            echo "GEMINI_API_KEY is not set; the release AAB will use the placeholder from .env.example."
+            echo "GEMINI_API_KEY is not set. The build uses the placeholder from .env.example."
+          fi
+          if [ -n "${ANDROID_KEYSTORE_BASE64}" ] && [ -n "${STORE_PASSWORD}" ] && [ -n "${KEY_PASSWORD}" ]; then
+            umask 077
+            printf '%s' "${ANDROID_KEYSTORE_BASE64}" | tr -d '\n\r' | base64 -d > "${RUNNER_TEMP}/upload.jks"
+            if [ ! -s "${RUNNER_TEMP}/upload.jks" ]; then
+              echo "Decoded keystore is empty." >&2
+              exit 1
+            fi
+            echo "sign=true" >> "${GITHUB_OUTPUT}"
+            echo "keystore=${RUNNER_TEMP}/upload.jks" >> "${GITHUB_OUTPUT}"
+            echo "Signing secrets are present. The release AAB will be signed (alias upload)."
+          else
+            echo "sign=false" >> "${GITHUB_OUTPUT}"
+            echo "Signing secrets are absent. Building a debug APK and an unsigned release AAB."
           fi
 
-      - name: Bundle signed release
+      - name: Build
         env:
-          KEYSTORE_PATH: ${{ runner.temp }}/upload.jks
+          SIGN: ${{ steps.signing.outputs.sign }}
+          KEYSTORE_PATH: ${{ steps.signing.outputs.keystore }}
           STORE_PASSWORD: ${{ secrets.STORE_PASSWORD }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
         run: |
           set -euo pipefail
-          if [ -z "${STORE_PASSWORD}" ] || [ -z "${KEY_PASSWORD}" ]; then
-            echo "Missing STORE_PASSWORD or KEY_PASSWORD" >&2
-            exit 1
-          fi
+          chmod +x ./gradlew
           if [ "${GITHUB_EVENT_NAME}" = "workflow_dispatch" ]; then
             VERSION_NAME="${{ github.event.inputs.version_name }}"
+          elif [ "${GITHUB_EVENT_NAME}" = "pull_request" ]; then
+            VERSION_NAME="pr-${{ github.event.pull_request.number }}"
           else
             VERSION_NAME="${GITHUB_REF_NAME}"
           fi
@@ -82,13 +107,19 @@ jobs:
             VERSION_NAME="1.0.0"
           fi
           export VERSION_NAME
-          echo "versionName=${VERSION_NAME} versionCode=${GITHUB_RUN_NUMBER}"
-          chmod +x ./gradlew
-          ./gradlew bundleRelease --no-daemon
+          echo "versionName=${VERSION_NAME} versionCode=${GITHUB_RUN_NUMBER} sign=${SIGN}"
+          if [ "${SIGN}" = "true" ]; then
+            ./gradlew bundleRelease --no-daemon
+          else
+            unset KEYSTORE_PATH STORE_PASSWORD KEY_PASSWORD || true
+            ./gradlew assembleDebug bundleRelease --no-daemon
+          fi
 
-      - name: Upload release AAB
+      - name: Upload build outputs
         uses: actions/upload-artifact@v4
         with:
-          name: sbtech-investor-release
-          path: app/build/outputs/bundle/release/*.aab
+          name: sbtech-investor-build
+          path: |
+            app/build/outputs/bundle/release/*.aab
+            app/build/outputs/apk/debug/*.apk
           if-no-files-found: error
