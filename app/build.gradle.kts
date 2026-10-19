@@ -13,6 +13,9 @@ plugins {
 // google-services.json is not committed. Put the Firebase Android config at
 // app/google-services.json. CI writes that path from the GOOGLE_SERVICES_JSON secret.
 // The plugin warns and the project still builds when the file is absent.
+// The Google Web client ID is not hardcoded. When the file contains an OAuth
+// client (client_type 3), this plugin generates the default_web_client_id
+// string resource. Without it, Google sign-in stays disabled.
 // Release signing reads only KEYSTORE_PATH, STORE_PASSWORD, and KEY_PASSWORD.
 // The key alias is "upload". No keystore is stored in the repo. Debug builds use
 // the Android Gradle Plugin's default debug keystore.

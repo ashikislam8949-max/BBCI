@@ -7,4 +7,25 @@
     <string name="affiliation_disclaimer_detail">SBTECH Investor Desk helps you prepare your own business-setup notes. It does not sign you in to Nafath, MISA, or any other government service, and it does not submit or issue licences. Public references: https://misa.gov.sa and https://investsaudi.sa.</string>
     <string name="disclaimer_acknowledge">I understand</string>
     <string name="disclaimer_close">Close</string>
+    <string name="account_title">Investor account</string>
+    <string name="google_sign_in">Sign in with Google</string>
+    <string name="google_sign_in_subtitle">Sign in with your Google account. Your investor profile is stored in Firebase under that account.</string>
+    <string name="google_sign_in_unavailable">Google sign-in is off in this build. Add app/google-services.json with a Web client ID to enable it.</string>
+    <string name="account_signed_in">SIGNED IN WITH GOOGLE</string>
+    <string name="account_signed_out">NOT SIGNED IN</string>
+    <string name="account_guest">Guest</string>
+    <string name="account_not_connected">Not connected</string>
+    <string name="account_entity">Entity: %1$s</string>
+    <string name="account_profile_heading">Investor profile linked to this account</string>
+    <string name="account_name_label">Name</string>
+    <string name="account_email_label">Google account email</string>
+    <string name="account_company_label">Company</string>
+    <string name="save_account_profile">Save profile to this account</string>
+    <string name="sign_out">Sign out</string>
+    <string name="delete_account">Delete account</string>
+    <string name="delete_account_title">Delete this account?</string>
+    <string name="delete_account_body">This deletes the Firebase sign-in and the investor profile stored for this account. Notes kept only on this device stay on the device.</string>
+    <string name="delete_account_confirm">Delete account</string>
+    <string name="profile_saved_to_account">This profile is saved to your Google account.</string>
+    <string name="profile_sign_in_to_sync">Sign in with Google from the account button to save this profile to your account.</string>
 </resources>

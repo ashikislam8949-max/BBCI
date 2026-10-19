@@ -211,7 +211,7 @@ fun MainApp(viewModel: MainViewModel = viewModel()) {
                                 modifier = Modifier
                                     .size(8.dp)
                                     .clip(CircleShape)
-                                    .background(SaudiGold)
+                                    .background(if (currentUser != null) SaudiGold else Color.White.copy(alpha = 0.35f))
                             )
                         }
                     }

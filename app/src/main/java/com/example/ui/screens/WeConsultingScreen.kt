@@ -84,10 +84,12 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.R
 import com.example.data.consulting.InvestmentExpert
 import com.example.data.consulting.InvestorAdvisoryData
 import com.example.data.consulting.InvestorInterestProfile
@@ -111,6 +113,7 @@ fun WeConsultingScreen(
 ) {
     val consultations by viewModel.consultations.collectAsStateWithLifecycle()
     val investorProfile by viewModel.investorProfile.collectAsStateWithLifecycle()
+    val currentUser by viewModel.currentUser.collectAsStateWithLifecycle()
     val selectedExpertForBooking by viewModel.selectedExpertForBooking.collectAsStateWithLifecycle()
     val aiSectorReport by viewModel.aiSectorReport.collectAsStateWithLifecycle()
     val isAiSectorReportLoading by viewModel.isAiSectorReportLoading.collectAsStateWithLifecycle()
@@ -204,6 +207,7 @@ fun WeConsultingScreen(
 
                 1 -> InvestorInterestsSection(
                     profile = investorProfile,
+                    accountLinked = currentUser != null,
                     onSaveProfile = { updated ->
                         viewModel.updateInvestorProfile(updated)
                     },
@@ -622,6 +626,7 @@ fun ExpertCard(
 @Composable
 fun InvestorInterestsSection(
     profile: InvestorInterestProfile,
+    accountLinked: Boolean,
     onSaveProfile: (InvestorInterestProfile) -> Unit,
     onExploreOpportunities: () -> Unit
 ) {
@@ -672,6 +677,15 @@ fun InvestorInterestsSection(
                             "Define your expansion interests to unlock curated Vision 2030 opportunities, tailored MISA licensing tiers, and matched sector advisors.",
                             fontSize = 11.sp,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = stringResource(
+                                if (accountLinked) R.string.profile_saved_to_account
+                                else R.string.profile_sign_in_to_sync
+                            ),
+                            fontSize = 11.sp,
+                            color = if (accountLinked) SaudiGreen else MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
                 }
