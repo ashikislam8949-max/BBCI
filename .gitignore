@@ -16,3 +16,8 @@
 local.properties
 .env
 debug.keystore
+*.jks
+*.keystore
+# Firebase Android config. Not committed. Place the file at app/google-services.json
+# (CI writes it there from the GOOGLE_SERVICES_JSON secret).
+google-services.json

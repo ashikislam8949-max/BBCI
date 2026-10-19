@@ -1,3 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">Saudi MISA CR</string>
+    <string name="app_name">SBTECH Investor Desk: Saudi Business Setup</string>
+    <string name="launcher_name">SBTECH Investor</string>
+    <string name="about_title">About this app</string>
+    <string name="affiliation_disclaimer">Independent app by SBTECH. Not affiliated with the Ministry of Investment (MISA) or any government entity.</string>
+    <string name="affiliation_disclaimer_detail">SBTECH Investor Desk helps you prepare your own business-setup notes. It does not sign you in to Nafath, MISA, or any other government service, and it does not submit or issue licences. Public references: https://misa.gov.sa and https://investsaudi.sa.</string>
+    <string name="disclaimer_acknowledge">I understand</string>
+    <string name="disclaimer_close">Close</string>
 </resources>

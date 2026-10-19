@@ -1,0 +1,151 @@
+# Builds a release AAB. Does not upload to Google Play.
+#
+# pull_request runs this check. Signing secrets are optional:
+# when ANDROID_KEYSTORE_BASE64, STORE_PASSWORD, and KEY_PASSWORD are all set,
+# the job signs the AAB (alias "upload"). Otherwise it builds a debug APK and
+# an unsigned release AAB.
+#
+# google-services.json is not in git. When GOOGLE_SERVICES_JSON is set, CI
+# writes it to app/google-services.json for that job only. The project still
+# builds when the file is absent.
+name: Release AAB
+
+on:
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      version_name:
+        description: versionName stored in the AAB
+        required: false
+        default: "1.0.0"
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-aab-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Use the preinstalled Android SDK
+        run: |
+          set -euo pipefail
+          SDK="${ANDROID_HOME:-/usr/local/lib/android/sdk}"
+          if [ ! -d "$SDK" ]; then
+            echo "Android SDK not found at $SDK" >&2
+            exit 1
+          fi
+          echo "ANDROID_HOME=$SDK" >> "$GITHUB_ENV"
+          echo "ANDROID_SDK_ROOT=$SDK" >> "$GITHUB_ENV"
+          SM=""
+          for candidate in \
+            "$SDK/cmdline-tools/latest/bin/sdkmanager" \
+            "$SDK/cmdline-tools/16.0/bin/sdkmanager"
+          do
+            if [ -x "$candidate" ]; then
+              SM="$candidate"
+              break
+            fi
+          done
+          if [ -z "$SM" ]; then
+            echo "sdkmanager not found under $SDK" >&2
+            find "$SDK" -name sdkmanager -type f
+            exit 1
+          fi
+          mkdir -p "$SDK/licenses"
+          printf '%s\n' "24333f8a63b6825ea9c5514f83c2829b004d1fee" > "$SDK/licenses/android-sdk-license"
+          set +o pipefail
+          yes | "$SM" --sdk_root="$SDK" --licenses >/dev/null || true
+          set -o pipefail
+          "$SM" --sdk_root="$SDK" --install "platforms;android-36.1" "build-tools;36.0.0" "platform-tools"
+
+      - name: Prepare optional signing and Firebase config
+        id: signing
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          STORE_PASSWORD: ${{ secrets.STORE_PASSWORD }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+          GOOGLE_SERVICES_JSON: ${{ secrets.GOOGLE_SERVICES_JSON }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: |
+          set -euo pipefail
+          if [ -n "${GOOGLE_SERVICES_JSON}" ]; then
+            umask 077
+            printf '%s\n' "${GOOGLE_SERVICES_JSON}" > app/google-services.json
+            echo "Wrote app/google-services.json from GOOGLE_SERVICES_JSON."
+          else
+            echo "GOOGLE_SERVICES_JSON is not set. Building without app/google-services.json."
+          fi
+          if [ -n "${GEMINI_API_KEY}" ]; then
+            umask 077
+            printf 'GEMINI_API_KEY=%s\n' "${GEMINI_API_KEY}" > .env
+          else
+            echo "GEMINI_API_KEY is not set. The build uses the placeholder from .env.example."
+          fi
+          if [ -n "${ANDROID_KEYSTORE_BASE64}" ] && [ -n "${STORE_PASSWORD}" ] && [ -n "${KEY_PASSWORD}" ]; then
+            umask 077
+            printf '%s' "${ANDROID_KEYSTORE_BASE64}" | tr -d '\n\r' | base64 -d > "${RUNNER_TEMP}/upload.jks"
+            if [ ! -s "${RUNNER_TEMP}/upload.jks" ]; then
+              echo "Decoded keystore is empty." >&2
+              exit 1
+            fi
+            echo "sign=true" >> "${GITHUB_OUTPUT}"
+            echo "keystore=${RUNNER_TEMP}/upload.jks" >> "${GITHUB_OUTPUT}"
+            echo "Signing secrets are present. The release AAB will be signed (alias upload)."
+          else
+            echo "sign=false" >> "${GITHUB_OUTPUT}"
+            echo "Signing secrets are absent. Building a debug APK and an unsigned release AAB."
+          fi
+
+      - name: Build
+        env:
+          SIGN: ${{ steps.signing.outputs.sign }}
+          KEYSTORE_PATH: ${{ steps.signing.outputs.keystore }}
+          STORE_PASSWORD: ${{ secrets.STORE_PASSWORD }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          chmod +x ./gradlew
+          if [ "${GITHUB_EVENT_NAME}" = "workflow_dispatch" ]; then
+            VERSION_NAME="${{ github.event.inputs.version_name }}"
+          elif [ "${GITHUB_EVENT_NAME}" = "pull_request" ]; then
+            VERSION_NAME="pr-${{ github.event.pull_request.number }}"
+          else
+            VERSION_NAME="${GITHUB_REF_NAME}"
+          fi
+          VERSION_NAME="${VERSION_NAME#v}"
+          if [ -z "${VERSION_NAME}" ]; then
+            VERSION_NAME="1.0.0"
+          fi
+          export VERSION_NAME
+          echo "versionName=${VERSION_NAME} versionCode=${GITHUB_RUN_NUMBER} sign=${SIGN}"
+          if [ "${SIGN}" = "true" ]; then
+            ./gradlew bundleRelease --no-daemon
+          else
+            unset KEYSTORE_PATH STORE_PASSWORD KEY_PASSWORD || true
+            ./gradlew assembleDebug bundleRelease --no-daemon
+          fi
+
+      - name: Upload build outputs
+        uses: actions/upload-artifact@v4
+        with:
+          name: sbtech-investor-build
+          path: |
+            app/build/outputs/bundle/release/*.aab
+            app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error

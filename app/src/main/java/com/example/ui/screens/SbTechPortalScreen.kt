@@ -114,7 +114,6 @@ fun SbTechPortalScreen(
     var activeSyncService by remember { mutableStateOf<String?>(null) }
     var isSyncingApi by remember { mutableStateOf(false) }
 
-    val authenticatedNafathUser by viewModel.authenticatedNafathUser.collectAsStateWithLifecycle()
     val wathqResult by viewModel.wathqResult.collectAsStateWithLifecycle()
     val zatcaResult by viewModel.zatcaResult.collectAsStateWithLifecycle()
     val qiwaResult by viewModel.qiwaResult.collectAsStateWithLifecycle()
@@ -229,11 +228,6 @@ fun SbTechPortalScreen(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
-                    GovMicroBadge(
-                        label = if (authenticatedNafathUser != null) "Nafath SSO: OK" else "Nafath: Guest",
-                        isSuccess = authenticatedNafathUser != null,
-                        onClick = { viewModel.selectTab(AppNavTab.GOV_INTEGRATIONS) }
-                    )
                     GovMicroBadge(
                         label = "Wathq CR: ساري",
                         isSuccess = true,
@@ -477,12 +471,10 @@ fun SbTechPortalScreen(
                 // Real Saudi Gov Integrations Hub for sbtech.sa
                 SbTechGovIntegrationsHub(
                     viewModel = viewModel,
-                    authenticatedNafathUser = authenticatedNafathUser,
                     wathqCrResult = wathqResult,
                     zatcaTaxResult = zatcaResult,
                     qiwaLaborResult = qiwaResult,
                     baladyResult = baladyResult,
-                    onOpenNafath = { viewModel.selectTab(AppNavTab.GOV_INTEGRATIONS) },
                     onTriggerSync = { service ->
                         activeSyncService = service
                         showSyncDialog = true
@@ -528,13 +520,12 @@ fun SbTechPortalScreen(
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     Text(
-                        text = "Direct API interconnection between sbtech.sa and Saudi Government Services:",
+                        text = "Sample notes for sbtech.sa. This app is not signed in to a government system:",
                         fontSize = 12.sp,
                         color = Color(0xFFCBD5E1)
                     )
 
-                    SyncStatusRow("Nafath SSO (نفاذ)", "Active Token JWT-Auth", true)
-                    SyncStatusRow("Wathq CR (واثق)", "CR 1010776412 Verified", true)
+                    SyncStatusRow("Wathq CR (واثق)", "Sample note", true)
                     SyncStatusRow("ZATCA Fatoora Phase 2", "TIN 310582910400003", true)
                     SyncStatusRow("Qiwa & Mudad", "Est #7-882193 (Platinum)", true)
                     SyncStatusRow("Balady Municipal", "License #4409923812", true)
@@ -689,7 +680,7 @@ private fun SbTechFallbackPortal(
                 )
 
                 Text(
-                    text = "The sbtech.sa enterprise portal is directly pre-configured with all Saudi Government digital gateways (Nafath, Wathq, ZATCA, Qiwa, Balady). You can access the live government interconnection hub below.",
+                    text = "sbtech.sa is the company site. This app does not sign you in to Nafath, MISA, or any other government service.",
                     fontSize = 12.sp,
                     color = Color(0xFFCBD5E1),
                     textAlign = TextAlign.Center
@@ -725,12 +716,10 @@ private fun SbTechFallbackPortal(
 @Composable
 private fun SbTechGovIntegrationsHub(
     viewModel: MainViewModel,
-    authenticatedNafathUser: com.example.data.nafath.NafathUserIdentity?,
     wathqCrResult: com.example.data.nafath.WathqCrResult?,
     zatcaTaxResult: com.example.data.nafath.ZatcaTaxResult?,
     qiwaLaborResult: com.example.data.nafath.QiwaLaborResult?,
     baladyResult: com.example.data.nafath.BaladyLicenseResult?,
-    onOpenNafath: () -> Unit,
     onTriggerSync: (String) -> Unit
 ) {
     LazyColumn(
@@ -747,28 +736,9 @@ private fun SbTechGovIntegrationsHub(
                 color = Color.White
             )
             Text(
-                text = "Live authenticated connections for SBTech Saudi Arabia Limited (CR: 1010776412)",
+                text = "Sample company notes for SBTech. Not a government login.",
                 fontSize = 11.sp,
                 color = Color(0xFF94A3B8)
-            )
-        }
-
-        // 1. Nafath SSO Card
-        item {
-            GovServiceSyncCard(
-                title = "1. Nafath Digital Identity (نفاذ الوطني الموحد)",
-                subtitle = "Authorized Signatory Verification for sbtech.sa",
-                icon = Icons.Default.Fingerprint,
-                iconColor = SaudiGreen,
-                statusText = if (authenticatedNafathUser != null) "AUTH OK: ${authenticatedNafathUser.arabicFullName}" else "Unauthenticated (Login Required)",
-                isSuccess = authenticatedNafathUser != null,
-                details = listOf(
-                    "National ID: ${authenticatedNafathUser?.nationalId ?: "Pending auth"}",
-                    "Signatory Authority: Certified for SBTech KSA (CR: 1010776412)",
-                    "Token: ${authenticatedNafathUser?.authToken?.take(18) ?: "None"}..."
-                ),
-                actionLabel = if (authenticatedNafathUser != null) "Manage Auth" else "Nafath Login نفاذ",
-                onAction = onOpenNafath
             )
         }
 
@@ -969,13 +939,7 @@ private fun SbTechAuthAndEmbedView(
 ) {
     val context = LocalContext.current
     val credentials by viewModel.sbTechCredentials.collectAsStateWithLifecycle()
-    val isHandshaking by viewModel.isSbTechHandshaking.collectAsStateWithLifecycle()
     val handshakeMessage by viewModel.sbTechHandshakeMessage.collectAsStateWithLifecycle()
-
-    var enteredAuthCode by remember(credentials.nafathAuthCode) { mutableStateOf(credentials.nafathAuthCode) }
-    var enteredWathqKey by remember(credentials.wathqApiKey) { mutableStateOf(credentials.wathqApiKey) }
-    var enteredZatcaToken by remember(credentials.zatcaCsidToken) { mutableStateOf(credentials.zatcaCsidToken) }
-    var enteredQiwaToken by remember(credentials.qiwaBearerToken) { mutableStateOf(credentials.qiwaBearerToken) }
 
     val embedSnippet = remember(credentials) {
         viewModel.getSbTechEmbedCode()
@@ -1007,13 +971,13 @@ private fun SbTechAuthAndEmbedView(
                         Spacer(modifier = Modifier.width(10.dp))
                         Column {
                             Text(
-                                text = "Authentication & Web Integration",
+                                text = "Website note",
                                 fontSize = 16.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = Color.White
                             )
                             Text(
-                                text = "إدخال رمز المصادقة وكود الويب لموقع sbtech.sa",
+                                text = "sbtech.sa",
                                 fontSize = 11.sp,
                                 color = SaudiGold
                             )
@@ -1021,7 +985,7 @@ private fun SbTechAuthAndEmbedView(
                     }
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
-                        text = "يمكنك إدخال رمز المصادقة (Authentication Code / Token) الخاص بك هنا مباشرة. بمجرد الضغط على زر الحفظ والفحص، سيتم تفعيل الربط وتحديث كود الموقع الجاهز لنسخه فورا.",
+                        text = "Copy a short website note. It is not a government authentication code.",
                         fontSize = 12.sp,
                         color = Color(0xFFCBD5E1)
                     )
@@ -1053,130 +1017,24 @@ private fun SbTechAuthAndEmbedView(
             }
         }
 
-        // Auth Code Inputs Form
         item {
             Card(
                 colors = CardDefaults.cardColors(containerColor = Color(0xFF1E293B)),
                 shape = RoundedCornerShape(12.dp)
             ) {
-                Column(
-                    modifier = Modifier.padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
+                Column(modifier = Modifier.padding(16.dp)) {
                     Text(
-                        text = "1. إدخال رمز المصادقة (Enter Auth Code)",
+                        text = "Not a government login",
                         fontSize = 14.sp,
                         fontWeight = FontWeight.Bold,
                         color = SaudiGold
                     )
-
-                    // Nafath Auth Code
-                    OutlinedTextField(
-                        value = enteredAuthCode,
-                        onValueChange = { enteredAuthCode = it },
-                        label = { Text("رمز مصادقة نفاذ (Nafath Auth Code / Token)") },
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = SaudiGold,
-                            unfocusedBorderColor = Color(0xFF475569),
-                            focusedTextColor = Color.White,
-                            unfocusedTextColor = Color.White,
-                            focusedLabelColor = SaudiGold,
-                            unfocusedLabelColor = Color(0xFF94A3B8)
-                        ),
-                        singleLine = true,
-                        trailingIcon = {
-                            IconButton(onClick = {
-                                val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-                                val clip = clipboard.primaryClip
-                                if (clip != null && clip.itemCount > 0) {
-                                    enteredAuthCode = clip.getItemAt(0).text.toString()
-                                    Toast.makeText(context, "تم لصق رمز المصادقة", Toast.LENGTH_SHORT).show()
-                                }
-                            }) {
-                                Icon(Icons.Default.ContentCopy, contentDescription = "Paste", tint = SaudiGold, modifier = Modifier.size(18.dp))
-                            }
-                        }
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = "Independent app by SBTECH. Not affiliated with MISA or any government entity. Website notes stay descriptive; this screen does not collect a national ID or a government token.",
+                        fontSize = 12.sp,
+                        color = Color(0xFFCBD5E1)
                     )
-
-                    // Wathq API Key
-                    OutlinedTextField(
-                        value = enteredWathqKey,
-                        onValueChange = { enteredWathqKey = it },
-                        label = { Text("مفتاح واثق للسجلات (Wathq API Key)") },
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = SaudiGreen,
-                            unfocusedBorderColor = Color(0xFF475569),
-                            focusedTextColor = Color.White,
-                            unfocusedTextColor = Color.White,
-                            focusedLabelColor = SaudiGreen,
-                            unfocusedLabelColor = Color(0xFF94A3B8)
-                        ),
-                        singleLine = true
-                    )
-
-                    // ZATCA Token
-                    OutlinedTextField(
-                        value = enteredZatcaToken,
-                        onValueChange = { enteredZatcaToken = it },
-                        label = { Text("ختم زكاة وفاتورة المرحلة الثانية (ZATCA CSID)") },
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = SaudiGreen,
-                            unfocusedBorderColor = Color(0xFF475569),
-                            focusedTextColor = Color.White,
-                            unfocusedTextColor = Color.White,
-                            focusedLabelColor = SaudiGreen,
-                            unfocusedLabelColor = Color(0xFF94A3B8)
-                        ),
-                        singleLine = true
-                    )
-
-                    // Qiwa Token
-                    OutlinedTextField(
-                        value = enteredQiwaToken,
-                        onValueChange = { enteredQiwaToken = it },
-                        label = { Text("رمز منصة قوى للمنشآت (Qiwa Bearer Token)") },
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = SaudiGreen,
-                            unfocusedBorderColor = Color(0xFF475569),
-                            focusedTextColor = Color.White,
-                            unfocusedTextColor = Color.White,
-                            focusedLabelColor = SaudiGreen,
-                            unfocusedLabelColor = Color(0xFF94A3B8)
-                        ),
-                        singleLine = true
-                    )
-
-                    Button(
-                        onClick = {
-                            viewModel.updateSbTechCredentials(
-                                credentials.copy(
-                                    nafathAuthCode = enteredAuthCode,
-                                    wathqApiKey = enteredWathqKey,
-                                    zatcaCsidToken = enteredZatcaToken,
-                                    qiwaBearerToken = enteredQiwaToken
-                                )
-                            )
-                            viewModel.testSbTechLiveHandshake(enteredAuthCode)
-                        },
-                        colors = ButtonDefaults.buttonColors(containerColor = SaudiGreen),
-                        shape = RoundedCornerShape(8.dp),
-                        modifier = Modifier.fillMaxWidth(),
-                        enabled = !isHandshaking
-                    ) {
-                        if (isHandshaking) {
-                            CircularProgressIndicator(color = Color.White, modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text("جارٍ الفحص والتفعيل المباشر...")
-                        } else {
-                            Icon(Icons.Default.Sync, contentDescription = null, modifier = Modifier.size(18.dp))
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text("حفظ وفحص الاتصال الفوري (Save & Test Connection)", fontWeight = FontWeight.Bold)
-                        }
-                    }
                 }
             }
         }

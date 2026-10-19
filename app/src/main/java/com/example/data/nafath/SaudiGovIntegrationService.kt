@@ -1,110 +1,10 @@
 package com.example.data.nafath
 
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import java.util.UUID
-import kotlin.random.Random
 
 class SaudiGovIntegrationService {
 
-    private val _nafathSession = MutableStateFlow(
-        NafathSession(
-            transactionId = "",
-            verificationCode = 0,
-            nationalId = "",
-            status = NafathAuthStatus.IDLE
-        )
-    )
-    val nafathSession: StateFlow<NafathSession> = _nafathSession.asStateFlow()
-
-    private val _authenticatedUser = MutableStateFlow<NafathUserIdentity?>(null)
-    val authenticatedUser: StateFlow<NafathUserIdentity?> = _authenticatedUser.asStateFlow()
-
-    // 1. Nafath SSO Flow
-    suspend fun initiateNafathAuth(nationalId: String) {
-        val cleanId = nationalId.trim()
-        if (cleanId.length != 10 || (!cleanId.startsWith("1") && !cleanId.startsWith("2"))) {
-            _nafathSession.value = _nafathSession.value.copy(
-                status = NafathAuthStatus.REJECTED,
-                errorMessage = "Invalid Saudi National ID / Iqama. Must be 10 digits starting with 1 (Citizen) or 2 (Resident)."
-            )
-            return
-        }
-
-        val code = Random.nextInt(10, 99)
-        val txId = "NFT-" + UUID.randomUUID().toString().substring(0, 8).uppercase()
-
-        _nafathSession.value = NafathSession(
-            transactionId = txId,
-            verificationCode = code,
-            nationalId = cleanId,
-            status = NafathAuthStatus.WAITING_USER_ACTION,
-            expiresInSeconds = 180
-        )
-    }
-
-    suspend fun completeNafathVerification(approved: Boolean = true) {
-        val current = _nafathSession.value
-        if (current.status != NafathAuthStatus.WAITING_USER_ACTION) return
-
-        if (!approved) {
-            _nafathSession.value = current.copy(
-                status = NafathAuthStatus.REJECTED,
-                errorMessage = "Authentication request rejected in Nafath Mobile App."
-            )
-            return
-        }
-
-        _nafathSession.value = current.copy(status = NafathAuthStatus.BIOMETRIC_VERIFICATION)
-        delay(1200) // Simulate biometric / face match verification with NIC
-
-        val isCitizen = current.nationalId.startsWith("1")
-        val identity = NafathUserIdentity(
-            nationalId = current.nationalId,
-            arabicFullName = if (isCitizen) "سلطان بن فهد بن عبدالعزيز آل سعود" else "طارق بن منصور بن رشيد الخالدي",
-            englishFullName = if (isCitizen) "Sultan Fahad Abdulaziz Al-Saud" else "Tarek Mansour Rasheed Al-Khalidi",
-            dateOfBirthHijri = if (isCitizen) "1408/06/14هـ" else "1412/11/02هـ",
-            dateOfBirthGregorian = if (isCitizen) "1988-02-02" else "1992-05-04",
-            nationality = if (isCitizen) "Saudi Arabia (سعودي)" else "Expatriate Partner (مستثمر مقيم)",
-            absherMobile = "+966 5" + Random.nextInt(10000000, 99999999),
-            nationalAddress = "Building 7214, King Fahd Rd, Al-Olaya, Riyadh 12213, KSA",
-            isAuthorizedSignatory = true,
-            authorizedCompanies = listOf(
-                "SBTech Saudi Arabia Ltd (sbtech.sa - CR: 1010776412)",
-                "Apex Global Cloud Solutions Ltd (CR: 1010892341)",
-                "Hyperion Robotics KSA LLC (CR: 1010992381)"
-            ),
-            authToken = "NFT-JWT-" + UUID.randomUUID().toString()
-        )
-
-        _authenticatedUser.value = identity
-        _nafathSession.value = current.copy(
-            status = NafathAuthStatus.SUCCESS,
-            identity = identity
-        )
-    }
-
-    fun logoutNafath() {
-        _authenticatedUser.value = null
-        _nafathSession.value = NafathSession(
-            transactionId = "",
-            verificationCode = 0,
-            nationalId = "",
-            status = NafathAuthStatus.IDLE
-        )
-    }
-
-    fun resetNafathSession() {
-        _nafathSession.value = NafathSession(
-            transactionId = "",
-            verificationCode = 0,
-            nationalId = "",
-            status = NafathAuthStatus.IDLE
-        )
-    }
-
+    // Sample planning records only. This service does not sign in to a government system.
     // 2. Wathq (Ministry of Commerce) API Query
     suspend fun queryWathqCr(crNumber: String): WathqCrResult {
         delay(800) // Simulated real-time Gov gateway latency
@@ -123,7 +23,7 @@ class SaudiGovIntegrationService {
                 legalForm = "شركة ذات مسؤولية محدودة (LLC - Tech & Gov Services)",
                 mainActivity = "620200 - استشارات تقنية المعلومات وحلول التحول الرقمي الحكومي (Digital Gov Solutions)",
                 city = "الرياض - طريق الملك فهد (Riyadh, King Fahd Rd)",
-                managerName = _authenticatedUser.value?.arabicFullName ?: "سلطان بن فهد بن عبدالعزيز آل سعود",
+                managerName = "Sample contact",
                 chamberOfCommerceNo = "CCI-RD-993821"
             )
         } else {
@@ -138,7 +38,7 @@ class SaudiGovIntegrationService {
                 legalForm = "شركة ذات مسؤولية محدودة (LLC - 100% Foreign Owned)",
                 mainActivity = "620101 - تطوير البرمجيات وحلول السحابة الإلكترونية (Cloud Systems & Software)",
                 city = "الرياض (Riyadh - KAFD)",
-                managerName = _authenticatedUser.value?.arabicFullName ?: "سلطان بن فهد بن عبدالعزيز آل سعود",
+                managerName = "Sample contact",
                 chamberOfCommerceNo = "CCI-RD-884219"
             )
         }

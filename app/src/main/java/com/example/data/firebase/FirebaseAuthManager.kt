@@ -39,6 +39,9 @@ class FirebaseAuthManager(private val context: Context) {
             if (FirebaseApp.getApps(context).isEmpty()) {
                 FirebaseApp.initializeApp(context)
             }
+            if (FirebaseApp.getApps(context).isNotEmpty()) {
+                AppCheckInstaller.install()
+            }
             firebaseAuth = FirebaseAuth.getInstance()
             firestore = FirebaseFirestore.getInstance()
 

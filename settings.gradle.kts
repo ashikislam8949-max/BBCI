@@ -22,6 +22,6 @@ dependencyResolutionManagement {
   }
 }
 
-rootProject.name = "Saudi MISA CR"
+rootProject.name = "SBTECH Investor Desk"
 
 include(":app")

@@ -26,7 +26,6 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Description
-import androidx.compose.material.icons.filled.Fingerprint
 import androidx.compose.material.icons.filled.Payment
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.VerifiedUser
@@ -42,7 +41,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -57,7 +55,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.data.local.CompanyDossierEntity
 import com.example.ui.AppNavTab
 import com.example.ui.MainViewModel
-import com.example.ui.components.NafathSsoAuthDialog
 import com.example.ui.components.SaudiBrandHeader
 import com.example.ui.components.StatusPill
 import com.example.ui.theme.SaudiGold
@@ -149,11 +146,9 @@ fun MisaCrWizardScreen(
 ) {
     val dossiers by viewModel.dossiers.collectAsStateWithLifecycle()
     val selectedDossier by viewModel.selectedDossier.collectAsStateWithLifecycle()
-    val authenticatedNafathUser by viewModel.authenticatedNafathUser.collectAsStateWithLifecycle()
 
     val activeDossier = selectedDossier ?: dossiers.firstOrNull()
     var viewingStepIndex by remember { mutableIntStateOf(0) }
-    var showNafathDialog by remember { mutableStateOf(false) }
 
     LazyColumn(
         modifier = modifier
@@ -164,8 +159,8 @@ fun MisaCrWizardScreen(
     ) {
         item {
             SaudiBrandHeader(
-                title = "MISA CR & Government Integration",
-                subtitle = "7-Step seamless company registration and digital regulatory issuance"
+                title = "Business setup checklist",
+                subtitle = "Preparation guide only. This app does not file with any authority."
             )
         }
         // Launch Multi-Step MISA Application Form Banner
@@ -188,14 +183,14 @@ fun MisaCrWizardScreen(
                 ) {
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
-                            text = "New: Multi-Step MISA e-License Form",
+                            text = "Business setup checklist",
                             color = Color(0xFF86EFAC),
                             fontWeight = FontWeight.Bold,
                             fontSize = 15.sp
                         )
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(
-                            text = "Launch interactive 5-step form for company registration, business activity selection, and capital filing.",
+                            text = "Prepare company, activity, and capital notes on this device. Nothing is filed with a government portal.",
                             color = Color.White,
                             fontSize = 12.sp
                         )
@@ -383,83 +378,6 @@ fun MisaCrWizardScreen(
             }
         }
 
-        // Nafath Signatory Status for Regulated Commercial Filing
-        item {
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable { showNafathDialog = true }
-                    .testTag("wizard_nafath_signatory_card"),
-                shape = RoundedCornerShape(12.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = if (authenticatedNafathUser != null) Color(0xFF0F3621) else Color(0xFF1E2836)
-                ),
-                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(14.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Row(
-                        modifier = Modifier.weight(1f),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .size(38.dp)
-                                .clip(CircleShape)
-                                .background(if (authenticatedNafathUser != null) SaudiGreen else SaudiGold),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Fingerprint,
-                                contentDescription = null,
-                                tint = if (authenticatedNafathUser != null) Color.White else Color(0xFF1E241F),
-                                modifier = Modifier.size(22.dp)
-                            )
-                        }
-                        Spacer(modifier = Modifier.width(10.dp))
-                        Column {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Text(
-                                    text = if (authenticatedNafathUser != null) "Nafath Signatory Verified (مفوض معتمد)"
-                                    else "Government-Regulated Signatory Filing",
-                                    fontSize = 12.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = Color.White
-                                )
-                            }
-                            Text(
-                                text = if (authenticatedNafathUser != null)
-                                    "${authenticatedNafathUser!!.arabicFullName} • National ID: ${authenticatedNafathUser!!.nationalId}"
-                                else
-                                    "Sign in via Nafath SSO to verify your legal signatory status for MISA & Wathq filings",
-                                fontSize = 10.sp,
-                                color = if (authenticatedNafathUser != null) Color(0xFF86EFAC) else Color(0xFFCBD5E1)
-                            )
-                        }
-                    }
-
-                    Box(
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(6.dp))
-                            .background(if (authenticatedNafathUser != null) StatusSuccess.copy(alpha = 0.2f) else SaudiGold)
-                            .padding(horizontal = 8.dp, vertical = 4.dp)
-                    ) {
-                        Text(
-                            text = if (authenticatedNafathUser != null) "Verified ✓" else "Verify via نفاذ",
-                            fontSize = 10.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = if (authenticatedNafathUser != null) StatusSuccess else Color(0xFF1E241F)
-                        )
-                    }
-                }
-            }
-        }
-
         // 7-Step Horizontal Stepper Navigation
         item {
             Text(
@@ -592,10 +510,4 @@ fun MisaCrWizardScreen(
         }
     }
 
-    if (showNafathDialog) {
-        NafathSsoAuthDialog(
-            viewModel = viewModel,
-            onDismiss = { showNafathDialog = false }
-        )
-    }
 }

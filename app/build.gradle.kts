@@ -1,4 +1,5 @@
 import com.google.gms.googleservices.GoogleServicesPlugin.MissingGoogleServicesStrategy
+import java.io.File
 
 plugins {
   alias(libs.plugins.android.application)
@@ -9,33 +10,44 @@ plugins {
   alias(libs.plugins.google.services)
 }
 
+// google-services.json is not committed. Put the Firebase Android config at
+// app/google-services.json. CI writes that path from the GOOGLE_SERVICES_JSON secret.
+// The plugin warns and the project still builds when the file is absent.
+// Release signing reads only KEYSTORE_PATH, STORE_PASSWORD, and KEY_PASSWORD.
+// The key alias is "upload". No keystore is stored in the repo. Debug builds use
+// the Android Gradle Plugin's default debug keystore.
+
+val keystorePath: String? = providers.environmentVariable("KEYSTORE_PATH").orNull?.takeIf { it.isNotBlank() }
+val storePassword: String? = providers.environmentVariable("STORE_PASSWORD").orNull
+val keyPassword: String? = providers.environmentVariable("KEY_PASSWORD").orNull
+val releaseKeystore: File? = keystorePath?.let { file(it) }
+val hasReleaseSigning: Boolean = releaseKeystore != null &&
+    releaseKeystore.isFile &&
+    !storePassword.isNullOrBlank() &&
+    !keyPassword.isNullOrBlank()
+
 android {
   namespace = "com.example"
   compileSdk { version = release(36) { minorApiLevel = 1 } }
 
   defaultConfig {
-    applicationId = "com.aistudio.saudimisacr.gvhqtz"
+    applicationId = "sa.sbtech.investor"
     minSdk = 24
     targetSdk = 36
-    versionCode = 1
-    versionName = "1.0"
+    versionCode = providers.environmentVariable("GITHUB_RUN_NUMBER").orNull?.toIntOrNull() ?: 1
+    versionName = providers.environmentVariable("VERSION_NAME").orNull?.removePrefix("v")?.takeIf { it.isNotBlank() } ?: "1.0"
 
     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
   }
 
   signingConfigs {
-    create("release") {
-      val keystorePath = System.getenv("KEYSTORE_PATH") ?: "${rootDir}/my-upload-key.jks"
-      storeFile = file(keystorePath)
-      storePassword = System.getenv("STORE_PASSWORD")
-      keyAlias = "upload"
-      keyPassword = System.getenv("KEY_PASSWORD")
-    }
-    create("debugConfig") {
-      storeFile = file("${rootDir}/debug.keystore")
-      storePassword = "android"
-      keyAlias = "androiddebugkey"
-      keyPassword = "android"
+    if (hasReleaseSigning) {
+      create("release") {
+        storeFile = releaseKeystore
+        storePassword = storePassword
+        keyAlias = "upload"
+        keyPassword = keyPassword
+      }
     }
   }
 
@@ -44,9 +56,11 @@ android {
       isCrunchPngs = false
       isMinifyEnabled = false
       proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
-      signingConfig = signingConfigs.getByName("release")
+      if (hasReleaseSigning) {
+        signingConfig = signingConfigs.getByName("release")
+      }
     }
-    debug { signingConfig = signingConfigs.getByName("debugConfig") }
+    debug { }
   }
   compileOptions {
     sourceCompatibility = JavaVersion.VERSION_11
@@ -107,8 +121,8 @@ dependencies {
   implementation(libs.androidx.credentials)
   implementation(libs.androidx.credentials.play.services)
   implementation(libs.googleid)
-  implementation(libs.firebase.appcheck.recaptcha)
-  implementation(libs.firebase.appcheck.debug)
+  implementation(libs.firebase.appcheck.playintegrity)
+  debugImplementation(libs.firebase.appcheck.debug)
   implementation(libs.kotlinx.coroutines.android)
   implementation(libs.kotlinx.coroutines.core)
   implementation(libs.logging.interceptor)
