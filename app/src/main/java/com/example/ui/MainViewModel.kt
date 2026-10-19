@@ -1,6 +1,7 @@
 package com.example.ui
 
 import android.app.Application
+import android.content.Context
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.data.consulting.InvestmentExpert
@@ -52,6 +53,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     val currentUser: StateFlow<UserProfile?> = authManager.currentUser
     val isAuthLoading: StateFlow<Boolean> = authManager.isLoading
+    val authError: StateFlow<String?> = authManager.authError
+    val googleSignInAvailable: Boolean
+        get() = authManager.googleSignInAvailable
 
     // Saudi Government API Query States
     private val _wathqResult = MutableStateFlow<WathqCrResult?>(null)
@@ -354,6 +358,12 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private val _investorProfile = MutableStateFlow(InvestorInterestProfile())
     val investorProfile: StateFlow<InvestorInterestProfile> = _investorProfile.asStateFlow()
 
+    init {
+        viewModelScope.launch {
+            linkSignedInProfile(_investorProfile.value)
+        }
+    }
+
     private val _selectedExpertForBooking = MutableStateFlow<InvestmentExpert?>(null)
     val selectedExpertForBooking: StateFlow<InvestmentExpert?> = _selectedExpertForBooking.asStateFlow()
 
@@ -365,6 +375,64 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     fun updateInvestorProfile(profile: InvestorInterestProfile) {
         _investorProfile.value = profile
+        val user = authManager.currentUser.value ?: return
+        viewModelScope.launch {
+            authManager.writeInvestorProfile(user.uid, profile, user.photoUrl)
+        }
+    }
+
+    fun signInWithGoogle(activityContext: Context) {
+        viewModelScope.launch {
+            val user = authManager.signInWithGoogle(activityContext) ?: return@launch
+            val local = _investorProfile.value.copy(
+                investorName = user.displayName.ifBlank { _investorProfile.value.investorName },
+                corporateEmail = user.email.ifBlank { _investorProfile.value.corporateEmail }
+            )
+            linkSignedInProfile(local)
+        }
+    }
+
+    fun saveSignedInIdentity(displayName: String, companyName: String) {
+        val user = authManager.currentUser.value ?: return
+        viewModelScope.launch {
+            authManager.updateDisplayName(displayName)
+            val updated = _investorProfile.value.copy(
+                investorName = displayName.ifBlank { user.displayName },
+                companyName = companyName.ifBlank { _investorProfile.value.companyName },
+                corporateEmail = user.email.ifBlank { _investorProfile.value.corporateEmail }
+            )
+            _investorProfile.value = updated
+            authManager.writeInvestorProfile(user.uid, updated, authManager.currentUser.value?.photoUrl)
+        }
+    }
+
+    fun signOut() {
+        viewModelScope.launch {
+            authManager.signOut()
+        }
+    }
+
+    fun deleteAccount(onDeleted: () -> Unit = {}) {
+        viewModelScope.launch {
+            if (authManager.deleteAccount()) {
+                onDeleted()
+            }
+        }
+    }
+
+    private suspend fun linkSignedInProfile(local: InvestorInterestProfile) {
+        val user = authManager.currentUser.value ?: return
+        val linked = authManager.readInvestorProfile(user.uid, local)
+        val merged = if (linked.fromCloud) {
+            linked.profile
+        } else {
+            local.copy(
+                investorName = user.displayName.ifBlank { local.investorName },
+                corporateEmail = user.email.ifBlank { local.corporateEmail }
+            )
+        }
+        _investorProfile.value = merged
+        authManager.writeInvestorProfile(user.uid, merged, user.photoUrl)
     }
 
     fun selectExpertForBooking(expert: InvestmentExpert?) {
